@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A Surprise For Noman</title>
+<style>
+  :root{
+    --bg1:#1a0b2e; --bg2:#3b1450; --bg3:#7a1f5c;
+    --gold:#ffd86b; --pink:#ff7ac8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:#fff;
+    background:radial-gradient(ellipse at 30% 20%,var(--bg3),var(--bg2) 45%,var(--bg1));
+    touch-action:none;}
+
+  /* floating background sparkles */
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+  .stars i{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;opacity:.6;
+    animation:twinkle 3s infinite ease-in-out}
+  @keyframes twinkle{0%,100%{opacity:.15;transform:scale(.6)}50%{opacity:.9;transform:scale(1.4)}}
+
+  /* ---------- Identity question ---------- */
+  #ask{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    z-index:10;padding:16px;transition:opacity .6s ease}
+  #ask.leaving{opacity:0;pointer-events:none}
+  .card{width:min(92vw,460px);text-align:center;padding:34px 24px 30px;border-radius:26px;
+    background:rgba(255,255,255,.08);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.2);box-shadow:0 20px 60px rgba(0,0,0,.45);
+    animation:pop .7s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  .card .emoji{font-size:3rem;margin-bottom:8px;animation:bob 2s infinite ease-in-out}
+  @keyframes bob{50%{transform:translateY(-8px)}}
+  .card h1{font-size:clamp(1.6rem,6vw,2.2rem);margin-bottom:6px}
+  .card p{opacity:.8;margin-bottom:24px;font-size:1rem}
+  .btn{border:none;cursor:pointer;font-weight:700;font-size:1.15rem;color:#fff;
+    padding:14px 34px;border-radius:999px;min-width:110px;
+    box-shadow:0 8px 22px rgba(0,0,0,.35);transition:transform .15s ease,box-shadow .15s ease;
+    user-select:none;-webkit-user-select:none;touch-action:manipulation}
+  .btn:active{transform:scale(.95)}
+  /* Both buttons live inside .arena, which sits INSIDE the main card.
+     The No button can only ever move within this arena. */
+  .arena{position:relative;width:100%;height:190px;margin-top:4px}
+  #yesBtn{position:absolute;left:50%;top:0;transform:translateX(-50%);
+    background:linear-gradient(135deg,#ff5fa2,#ff9a5f)}
+  #yesBtn:hover{transform:translateX(-50%) scale(1.07)}
+  #yesBtn:active{transform:translateX(-50%) scale(.95)}
+  #noBtn{position:absolute;left:0;top:0;z-index:3;
+    background:linear-gradient(135deg,#5f6cff,#59c8ff);
+    transition:left .25s cubic-bezier(.3,1.4,.5,1), top .25s cubic-bezier(.3,1.4,.5,1), transform .15s ease}
+
+  /* ---------- Celebration ---------- */
+  #stage{position:fixed;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+  #fx{position:fixed;inset:0;z-index:6;pointer-events:none}
+
+  .balloon{position:absolute;bottom:-190px;width:var(--size);height:calc(var(--size)*1.2);
+    border-radius:50% 50% 48% 48% / 55% 55% 45% 45%;
+    background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75),var(--c) 45%);
+    box-shadow:inset -8px -10px 18px rgba(0,0,0,.2),0 8px 20px rgba(0,0,0,.3);
+    display:flex;align-items:center;justify-content:center;
+    animation:rise var(--dur) cubic-bezier(.25,.6,.35,1) var(--delay) forwards;will-change:transform}
+  .balloon::after{ /* knot */
+    content:"";position:absolute;bottom:-9px;left:50%;width:12px;height:12px;background:var(--c);
+    transform:translateX(-50%) rotate(45deg);border-radius:2px}
+  .balloon .string{position:absolute;top:100%;left:50%;width:2px;height:60px;
+    background:rgba(255,255,255,.6);transform-origin:top;animation:sway 1.6s infinite ease-in-out}
+  @keyframes sway{0%,100%{transform:rotate(6deg)}50%{transform:rotate(-6deg)}}
+  .balloon .photo{width:68%;aspect-ratio:1/1;border-radius:50%;object-fit:cover;
+    border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.35);margin-top:-8%}
+  @keyframes rise{
+    0%{transform:translate(0,0) rotate(-3deg)}
+    50%{transform:translate(var(--drift),calc(var(--rise) * -.5)) rotate(3deg)}
+    100%{transform:translate(calc(var(--drift) * -.4),calc(var(--rise) * -1)) rotate(-2deg)}}
+
+  /* Title + message */
+  #final{position:fixed;inset:0;z-index:8;display:none;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;padding:18px;pointer-events:none}
+  #final.show{display:flex}
+  .title{display:flex;flex-wrap:wrap;justify-content:center;gap:0 .6em;line-height:1.1;margin-bottom:22px}
+  .word{display:flex}
+  .letter{display:inline-block;font-weight:900;font-size:clamp(2.1rem,9.5vw,5.6rem);
+    background:linear-gradient(180deg,var(--gold),var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 10px rgba(255,216,107,.8)) drop-shadow(0 0 24px rgba(255,122,200,.7));
+    opacity:0;transform:translateY(60px) scale(.3) rotate(-15deg);
+    animation:letterIn .7s cubic-bezier(.2,1.6,.4,1) forwards, glow 2s ease-in-out infinite alternate;
+    animation-delay:calc(var(--i) * .07s), calc(var(--i) * .07s + .7s)}
+  @keyframes letterIn{to{opacity:1;transform:none}}
+  @keyframes glow{
+    from{filter:drop-shadow(0 0 8px rgba(255,216,107,.7)) drop-shadow(0 0 16px rgba(255,122,200,.5))}
+    to{filter:drop-shadow(0 0 18px rgba(255,216,107,1)) drop-shadow(0 0 40px rgba(255,122,200,.95))}}
+  .message{max-width:640px;font-size:clamp(1rem,3.6vw,1.35rem);line-height:1.7;
+    background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.2);
+    padding:20px 24px;border-radius:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    opacity:0;transform:translateY(20px);animation:fadeUp 1.2s ease forwards;animation-delay:2.3s}
+  .message b{color:var(--gold)}
+  @keyframes fadeUp{to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<!-- ================= Identity question ================= -->
+<div id="ask">
+  <div class="card">
+    <div class="emoji">🎁</div>
+    <h1>Are you Hurr Porii?</h1>
+    <p>There's a little surprise waiting just for you…</p>
+    <div class="arena" id="arena">
+      <button class="btn" id="yesBtn" type="button">Yes</button>
+      <button class="btn" id="noBtn" type="button">No</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Celebration layers ================= -->
+<div id="stage"></div>
+<canvas id="fx"></canvas>
+
+<div id="final">
+  <div class="title" id="title" aria-label="Happy Birthday Nabila Noor Farook!"></div>
+  <div class="message">
+    Nabila Noor Farook, today the whole world gets to celebrate someone truly special. 🎂<br>
+    May your year be filled with <b>laughter</b>, <b>love</b> and every dream coming true.<br>
+    Happy birthday! 💖
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   HOW TO ADD YOUR OWN PHOTOS
+   ------------------------------------------------------------
+   Put your image paths or URLs in the PHOTOS list below, e.g.:
+       const PHOTOS = ["photo1.jpg", "photo2.jpg", "https://example.com/me.png"];
+   - Files must sit next to this HTML file (or use full URLs).
+   - Want one photo only? Put a single entry; it is reused on every balloon.
+   - Leave the list EMPTY to see cute placeholder faces instead.
+   ============================================================ */
+const PHOTOS = [
+   "1.jpg",
+   "2.jpg",
+   "3.jpg",
+    "4.jpg",
+    "5.jpg",
+     "6.jpg",
+     "7.jpg",
+];
+
+const BALLOON_COLORS = ["#ff4d6d","#ffb703","#06d6a0","#4cc9f0","#b388ff","#ff7ac8","#ff9e4a","#7bed9f"];
+const BALLOON_VISIBLE_MS = 3800;   // balloons float for ~3.8 seconds before bursting
+
+/* ---------- twinkling background ---------- */
+(function(){
+  const box = document.getElementById("stars");
+  for(let i=0;i<60;i++){
+    const s=document.createElement("i");
+    s.style.left=Math.random()*100+"%"; s.style.top=Math.random()*100+"%";
+    s.style.animationDelay=(Math.random()*3)+"s";
+    box.appendChild(s);
+  }
+})();
+
+/* ============================================================
+   NO BUTTON — runaway logic (stays INSIDE the main card)
+   - The No button lives in #arena (inside the card) and only moves within it.
+   - It is never hidden, never counted, and no timers are used.
+   - One single `dodge()` function is used by every event, so listeners cannot conflict.
+   ============================================================ */
+const arena  = document.getElementById("arena");
+const noBtn  = document.getElementById("noBtn");
+const yesBtn = document.getElementById("yesBtn");
+const TRIGGER_DIST = 70;     // mouse closer than this (px) makes it flee
+let celebrating = false;
+let lastPointer = {x:-9999,y:-9999};   // viewport coordinates
+
+function clampNo(){
+  const aw = arena.clientWidth, ah = arena.clientHeight;
+  const w = noBtn.offsetWidth, h = noBtn.offsetHeight;
+  let l = parseFloat(noBtn.style.left), t = parseFloat(noBtn.style.top);
+  if(isNaN(l)) l = (aw-w)/2;
+  if(isNaN(t)) t = ah-h;
+  noBtn.style.left = Math.min(Math.max(0,l),Math.max(0,aw-w)) + "px";
+  noBtn.style.top  = Math.min(Math.max(0,t),Math.max(0,ah-h)) + "px";
+}
+clampNo();                               // start centred at the bottom of the box
+
+function dodge(px, py){
+  if(celebrating) return;
+  if(typeof px === "number") lastPointer = {x:px,y:py};
+
+  const aw = arena.clientWidth, ah = arena.clientHeight;
+  const w = noBtn.offsetWidth, h = noBtn.offsetHeight;
+  const ar = arena.getBoundingClientRect();
+  const yl = yesBtn.offsetLeft - (yesBtn.offsetWidth/2), yt = yesBtn.offsetTop;   // yes box (it is centred)
+  const yes = {l:arena.clientWidth/2 - yesBtn.offsetWidth/2 - 12, t:yt-12,
+               r:arena.clientWidth/2 + yesBtn.offsetWidth/2 + 12, b:yt+yesBtn.offsetHeight+12};
+  const curL = parseFloat(noBtn.style.left)||0, curT = parseFloat(noBtn.style.top)||0;
+  const px0 = lastPointer.x - ar.left, py0 = lastPointer.y - ar.top;   // pointer in arena coords
+  const minJump = Math.min(aw,ah)*0.45, minFromPointer = 100;
+  let best = null, bestScore = -1;
+
+  for(let i=0;i<80;i++){
+    const l = Math.random()*Math.max(0,aw-w);
+    const t = Math.random()*Math.max(0,ah-h);
+    // never land on top of the Yes button
+    if(l < yes.r && l+w > yes.l && t < yes.b && t+h > yes.t) continue;
+    const dMove = Math.hypot((l+w/2)-(curL+w/2), (t+h/2)-(curT+h/2));
+    const dPtr  = Math.hypot((l+w/2)-px0, (t+h/2)-py0);
+    const score = Math.min(dMove/minJump,1) + Math.min(dPtr/minFromPointer,1);
+    if(score > bestScore){ bestScore = score; best = {l,t}; }
+    if(dMove >= minJump && dPtr >= minFromPointer){ best = {l,t}; break; }
+  }
+  if(!best) best = {l:0,t:ah-h};                         // safe fallback: bottom-left corner of the box
+  noBtn.style.left = best.l + "px";
+  noBtn.style.top  = best.t + "px";
+}
+
+function nearNo(x,y,dist){
+  const r = noBtn.getBoundingClientRect();
+  const dx = Math.max(r.left - x, 0, x - r.right);
+  const dy = Math.max(r.top  - y, 0, y - r.bottom);
+  return Math.hypot(dx,dy) < dist;
+}
+
+/* Desktop: flee when the mouse gets near */
+document.addEventListener("pointermove", e=>{
+  if(celebrating || e.pointerType==="touch") return;
+  lastPointer = {x:e.clientX,y:e.clientY};
+  if(nearNo(e.clientX,e.clientY,TRIGGER_DIST)) dodge(e.clientX,e.clientY);
+}, {passive:true});
+
+/* Direct hover / press on the button itself */
+noBtn.addEventListener("pointerenter", e=>dodge(e.clientX,e.clientY));
+noBtn.addEventListener("pointerdown", e=>{ e.preventDefault(); dodge(e.clientX,e.clientY); });
+
+/* Touch screens: touching the button makes it jump away */
+noBtn.addEventListener("touchstart", e=>{
+  e.preventDefault();
+  const t = e.touches[0];
+  dodge(t ? t.clientX : undefined, t ? t.clientY : undefined);
+}, {passive:false});
+/* Finger landing close to it also triggers a dodge */
+document.addEventListener("touchstart", e=>{
+  if(celebrating) return;
+  const t = e.touches[0]; if(!t) return;
+  lastPointer = {x:t.clientX,y:t.clientY};
+  if(nearNo(t.clientX,t.clientY,50)) dodge(t.clientX,t.clientY);
+}, {passive:true});
+
+/* A stray click / keyboard focus can never "answer" No — it just escapes again */
+noBtn.addEventListener("click", e=>{ e.preventDefault(); dodge(); });
+noBtn.addEventListener("focus", ()=>dodge());
+
+/* Keep it inside the box after rotation / resize */
+window.addEventListener("resize", clampNo);
+
+/* ============================================================
+   CELEBRATION
+   ============================================================ */
+yesBtn.addEventListener("click", startCelebration);
+
+function startCelebration(){
+  if(celebrating) return;
+  celebrating = true;                       // question is answered, hide the question screen
+  document.getElementById("ask").classList.add("leaving");
+  setTimeout(()=>{ document.getElementById("ask").style.display="none"; noBtn.style.display="none"; }, 650);
+  launchBalloons();
+}
+
+/* placeholder face used when PHOTOS is empty */
+function placeholderPhoto(i){
+  const faces=["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpg","🎈"];
+  const cols=["#ffd6e8","#d6f0ff","#fff3c4","#e3d6ff"];
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>
+    <rect width='200' height='200' fill='${cols[i%cols.length]}'/>
+    <text x='100' y='135' font-size='110' text-anchor='middle'>${faces[i%faces.length]}</text></svg>`;
+  return "data:image/svg+xml;utf8,"+encodeURIComponent(svg);
+}
+
+function launchBalloons(){
+  const stage = document.getElementById("stage");
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const count = vw < 600 ? 7 : 11;
+  const size  = vw < 600 ? 92 : 130;
+  const balloons = [];
+
+  for(let i=0;i<count;i++){
+    const b = document.createElement("div");
+    b.className = "balloon";
+    const color = BALLOON_COLORS[i % BALLOON_COLORS.length];
+    const slot = (i + .5) / count;                        // spread across width
+    const left = Math.max(4, Math.min(96, slot*100 + (Math.random()*6-3)));
+    b.style.setProperty("--c", color);
+    b.style.setProperty("--size", (size*(0.85+Math.random()*.3))+"px");
+    b.style.left = `calc(${left}% - ${size/2}px)`;
+    b.style.setProperty("--dur",  (3.2+Math.random()*.6)+"s");
+    b.style.setProperty("--delay",(Math.random()*.5)+"s");
+    b.style.setProperty("--rise", (vh*(0.55+Math.random()*.25) + 190)+"px");
+    b.style.setProperty("--drift",(Math.random()*60-30)+"px");
+
+    const img = document.createElement("img");
+    img.className = "photo";
+    img.alt = "";
+    img.src = PHOTOS.length ? PHOTOS[i % PHOTOS.length] : placeholderPhoto(i);
+    img.onerror = ()=>{ img.onerror=null; img.src = placeholderPhoto(i); };   // broken path fallback
+    b.appendChild(img);
+
+    const s = document.createElement("div"); s.className="string"; b.appendChild(s);
+    stage.appendChild(b);
+    balloons.push({el:b,color});
+  }
+
+  // all balloons burst together after ~3.8 s
+  setTimeout(()=>burstAll(balloons), BALLOON_VISIBLE_MS);
+}
+
+/* ---------- particle canvas ---------- */
+const canvas = document.getElementById("fx");
+const ctx = canvas.getContext("2d");
+let particles = [], rafId = null;
+function sizeCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = innerWidth*dpr; canvas.height = innerHeight*dpr;
+  canvas.style.width = innerWidth+"px"; canvas.style.height = innerHeight+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+sizeCanvas(); window.addEventListener("resize", sizeCanvas);
+
+function spawnBurst(x,y,color){
+  for(let i=0;i<46;i++){
+    const a = Math.random()*Math.PI*2, sp = 3+Math.random()*9;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,g:.18,life:1,decay:.014+Math.random()*.015,
+      r:2+Math.random()*4,color: Math.random()<.6?color:"#fff",shape:"c"});
+  }
+}
+function spawnConfetti(x,y,n,spread){
+  const cols=["#ff4d6d","#ffd86b","#06d6a0","#4cc9f0","#b388ff","#ff7ac8","#fff"];
+  for(let i=0;i<n;i++){
+    const a = -Math.PI/2 + (Math.random()-.5)*spread, sp = 6+Math.random()*12;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,g:.28,life:1,decay:.006+Math.random()*.006,
+      w:6+Math.random()*7,h:3+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-.5)*.4,
+      color:cols[(Math.random()*cols.length)|0],shape:"r"});
+  }
+}
+function loop(){
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  particles = particles.filter(p=>p.life>0 && p.y < innerHeight+40);
+  for(const p of particles){
+    p.vy += p.g; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+    ctx.globalAlpha = Math.max(p.life,0); ctx.fillStyle = p.color;
+    if(p.shape==="c"){ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }
+    else { p.rot += p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+           ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); }
+  }
+  ctx.globalAlpha = 1;
+  if(particles.length){ rafId = requestAnimationFrame(loop); } else { rafId = null; ctx.clearRect(0,0,innerWidth,innerHeight); }
+}
+function kick(){ if(!rafId) rafId = requestAnimationFrame(loop); }
+
+function burstAll(balloons){
+  balloons.forEach(({el,color},i)=>{
+    const r = el.getBoundingClientRect();
+    setTimeout(()=>{
+      spawnBurst(r.left+r.width/2, r.top+r.height/2, color);
+      el.remove();
+      kick();
+    }, i*25);
+  });
+  // confetti cannons from both bottom corners + a rain from the top
+  spawnConfetti(0, innerHeight, 90, 1.0);
+  spawnConfetti(innerWidth, innerHeight, 90, 1.0);
+  spawnConfetti(innerWidth/2, innerHeight, 120, 1.6);
+  kick();
+  let rain = 0;
+  const rainTimer = setInterval(()=>{
+    spawnConfetti(Math.random()*innerWidth, -10, 12, 0.6);
+    // aim downward for rain
+    particles.slice(-12).forEach(p=>{ p.vy = Math.abs(p.vy)*.4+2; p.vx *= .3; });
+    kick();
+    if(++rain > 14) clearInterval(rainTimer);
+  }, 200);
+
+  // Title shows ONLY after the explosion
+  setTimeout(showTitle, 900);
+}
+
+function showTitle(){
+  const title = document.getElementById("title");
+  const words = ["HAPPY","BIRTHDAY","NABILA!"];
+  let idx = 0;
+  words.forEach(w=>{
+    const wd = document.createElement("div"); wd.className="word";
+    [...w].forEach(ch=>{
+      const s=document.createElement("span"); s.className="letter"; s.textContent=ch;
+      s.style.setProperty("--i", idx++); wd.appendChild(s);
+    });
+    title.appendChild(wd);
+  });
+  document.getElementById("final").classList.add("show");
+  // a second, gentler confetti shower as the title appears
+  spawnConfetti(innerWidth*.25, innerHeight, 60, 1.2);
+  spawnConfetti(innerWidth*.75, innerHeight, 60, 1.2);
+  kick();
+}
+</script>
+</body>
+</html>
